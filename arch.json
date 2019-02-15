@@ -1,0 +1,74 @@
+{
+    "variables": {
+        "vm_version": "",
+        "cloud-token": "{{ env `VAGRANT_CLOUD_TOKEN` }}"
+    },
+    "builders": [
+        {
+            "type": "virtualbox-iso",
+            "boot_wait": "60s",
+            "http_directory": "http",
+            "disk_size": "10240",
+            "guest_os_type": "ArchLinux_64",
+            "hard_drive_interface": "sata",
+            "sata_port_count": 10,
+            "iso_checksum": "fd4adb6c92d63500a492de53753091f072036333",
+            "iso_checksum_type": "sha1",
+            "iso_url": "archlinux-2019.02.01-x86_64.iso",
+            "ssh_username": "vagrant",
+            "ssh_password": "vagrant",
+            "ssh_port": 22,
+            "ssh_wait_timeout": "10000s",
+            "shutdown_command": "sudo systemctl poweroff",
+            "guest_additions_mode": "disable",
+            "headless": "true",
+            "vm_name": "yuenfaytsang/archlinux",
+            "vboxmanage": [
+                [
+                    "modifyvm",
+                    "{{.Name}}",
+                    "--memory",
+                    "1024"
+                ],
+                [
+                    "modifyvm",
+                    "{{.Name}}",
+                    "--cpus",
+                    "2"
+                ]
+            ],
+            "boot_command": [
+                "<enter><wait10><wait10><wait10><wait10><wait10><enter><enter>",
+                "curl -O 'http://{{.HTTPIP}}:{{.HTTPPort}}/install{,-chroot}.sh'<enter><wait>",
+                "bash install.sh < install-chroot.sh && systemctl reboot<enter>"
+            ]
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "scripts": [
+                "provision/postinstall.sh",
+                "provision/virtualbox.sh",
+                "provision/cleanup.sh",
+                "provision/write_zeroes.sh"
+            ],
+            "execute_command": "echo 'vagrant'|sudo -S sh '{{.Path}}'"
+        }
+    ],
+    "post-processors": [
+        [
+            {
+                "type": "vagrant",
+                "keep_input_artifact": false,
+                "output": "builds/yuenfaytsang-archlinux.box"
+            },
+            {
+                "type": "vagrant-cloud",
+                "access_token": "{{user `cloud_token`}}",
+                "box_tag": "yuenfaytsang/archlinux",
+                "version": "{{user `vm_version`}}"    
+              }
+        ]
+    ]
+}
